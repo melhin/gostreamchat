@@ -88,18 +88,20 @@ func (u *User) connect(rdb *redis.Client) error {
 
 	var c []string
 
-	c1, err := rdb.SMembers(ctx, ChannelsKey).Result()
-	if err != nil {
-		return err
-	}
-	c = append(c, c1...)
+	// Stub channel
+	c = append(c, "general")
 
-	// get all user channels (from DB) and start subscribe
-	c2, err := rdb.SMembers(ctx, fmt.Sprintf(userChannelFmt, u.name)).Result()
-	if err != nil {
-		return err
-	}
-	c = append(c, c2...)
+	//c1, err := rdb.SMembers(ctx, ChannelsKey).Result()
+	//if err != nil {
+	//	return err
+	//}
+	//c = append(c, c1...)s
+	//// get all user channels (from DB) and start subscribe
+	//c2, err := rdb.SMembers(ctx, fmt.Sprintf(userChannelFmt, u.name)).Result()
+	//if err != nil {
+	//	return err
+	//}
+	//c = append(c, c2...)
 
 	if len(c) == 0 {
 		fmt.Println("no channels to connect to for user: ", u.name)
@@ -121,6 +123,18 @@ func (u *User) connect(rdb *redis.Client) error {
 	return u.doConnect(rdb, c...)
 }
 
+func (u *User) Announce(rdb *redis.Client, username string, channel string) {
+	message := fmt.Sprintf("%s has joined %s", username, channel)
+	detail := DetailMsg{
+		Sender:      username,
+		Message:     message,
+		MessageType: Announcement,
+	}
+	if err := Chat(rdb, channel, detail); err != nil {
+		return
+	}
+}
+
 func (u *User) doConnect(rdb *redis.Client, channels ...string) error {
 	// subscribe all channels in one request
 	pubSub := rdb.Subscribe(ctx, channels...)
@@ -131,6 +145,9 @@ func (u *User) doConnect(rdb *redis.Client, channels ...string) error {
 	go func() {
 		u.listening = true
 		fmt.Println("starting the listener for user:", u.name, "on channels:", channels)
+		for _, channel := range channels {
+			u.Announce(rdb, u.name, channel)
+		}
 		for {
 			select {
 			case msg, ok := <-pubSub.Channel():

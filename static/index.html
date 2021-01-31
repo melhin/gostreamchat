@@ -14,7 +14,6 @@
             user: <input type="text" name="username" value="ff" autocomplete="off"/>
             <button>Connect</button>
         </form>
-        <div id="chat-info">connected users: <span id="user-list"></span></div>
         <div id="connection-output"></div>
         <ul id='messages' style="height: 60vh; overflow: scroll">
         </ul>
@@ -86,10 +85,8 @@
                     }
                     if (data['type'] == 'announcement') {
                         message_content = document.createElement('span');
-                        message_content.appendChild(document.createTextNode(data['msg']));
+                        message_content.appendChild(document.createTextNode(data['message']));
                         message_content.setAttribute('class', 'announcement');
-                        let user_list = document.getElementById('user-list');
-                        user_list.innerHTML = data['users'];
                     }
                     message.appendChild(message_content);
                     messages.appendChild(message);
