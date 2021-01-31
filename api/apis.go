@@ -44,3 +44,8 @@ func handleError(err error, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte(fmt.Sprintf(`{"err": "%s"}`, err.Error())))
 }
+
+func ReturnIndex(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusFound)
+
+}

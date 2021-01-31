@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"gostreamchat/user"
 	"net/http"
@@ -116,7 +117,13 @@ func onUserMessage(conn *websocket.Conn, r *http.Request, rdb *redis.Client) {
 			handleWSError(err, conn)
 		}
 	case commandChat:
-		if err := user.Chat(rdb, msg.Channel, msg.Content); err != nil {
+		fmt.Println(msg.Channel, msg.Content)
+		detail := user.DetailMsg{
+			Sender:      username,
+			Message:     msg.Content,
+			MessageType: user.Message,
+		}
+		if err := user.Chat(rdb, msg.Channel, detail); err != nil {
 			handleWSError(err, conn)
 		}
 	}
@@ -129,10 +136,9 @@ func onChannelMessage(conn *websocket.Conn, r *http.Request) {
 
 	go func() {
 		for m := range u.MessageChan {
-
-			msg := msg{
-				Content: m.Payload,
-				Channel: m.Channel,
+			msg := &user.DetailMsg{}
+			if err := json.Unmarshal([]byte(m.Payload), msg); err != nil {
+				fmt.Println(err)
 			}
 
 			if err := conn.WriteJSON(msg); err != nil {
