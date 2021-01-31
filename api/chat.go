@@ -112,12 +112,19 @@ func onUserMessage(conn *websocket.Conn, r *http.Request, rdb *redis.Client) {
 		if err := u.Subscribe(rdb, msg.Channel); err != nil {
 			handleWSError(err, conn)
 		}
+		detail := user.DetailMsg{
+			Sender:      username,
+			Message:     "",
+			MessageType: user.Announcement,
+		}
+		if err := user.Chat(rdb, msg.Channel, detail); err != nil {
+			handleWSError(err, conn)
+		}
 	case commandUnsubscribe:
 		if err := u.Unsubscribe(rdb, msg.Channel); err != nil {
 			handleWSError(err, conn)
 		}
 	case commandChat:
-		fmt.Println(msg.Channel, msg.Content)
 		detail := user.DetailMsg{
 			Sender:      username,
 			Message:     msg.Content,

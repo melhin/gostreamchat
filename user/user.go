@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -14,6 +15,8 @@ const (
 	usersKey       = "users"
 	userChannelFmt = "user:%s:channels"
 	ChannelsKey    = "channels"
+	Message        = "message"
+	Announcement   = "announcement"
 )
 
 var ctx = context.Background()
@@ -26,6 +29,12 @@ type User struct {
 	listening        bool
 
 	MessageChan chan redis.Message
+}
+
+type DetailMsg struct {
+	Sender      string `json:"sender,omitempty"`
+	Message     string `json:"message,omitempty"`
+	MessageType string `json:"type,omitempty"`
 }
 
 //Connect connect user to user channels on redis
@@ -157,7 +166,11 @@ func (u *User) Disconnect() error {
 	return nil
 }
 
-func Chat(rdb *redis.Client, channel string, content string) error {
+func Chat(rdb *redis.Client, channel string, detail DetailMsg) error {
+	content, err := json.Marshal(detail)
+	if err != nil {
+		return err
+	}
 	return rdb.Publish(ctx, channel, content).Err()
 }
 

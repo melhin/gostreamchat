@@ -25,9 +25,14 @@ func init() {
 func main() {
 
 	rdb = redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("can not get os working directory: %v", err)
+	}
+	web := http.FileServer(http.Dir(wd + "/static"))
 
 	r := mux.NewRouter()
-
+	r.Path("/").Methods("GET").Handler(web)
 	r.Path("/chat").Methods("GET").HandlerFunc(api.H(rdb, api.ChatWebSocketHandler))
 	r.Path("/user/{user}/channels").Methods("GET").HandlerFunc(api.H(rdb, api.UserChannelsHandler))
 	r.Path("/users").Methods("GET").HandlerFunc(api.H(rdb, api.UsersHandler))
