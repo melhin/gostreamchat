@@ -25,6 +25,7 @@ type User struct {
 	name            string
 	Channel         string
 	channelsHandler *redis.PubSub
+	streamChannel   *redis.XStreamSliceCmd
 
 	stopListenerChan chan struct{}
 	listening        bool
@@ -190,7 +191,24 @@ func Chat(rdb *redis.Client, channel string, detail DetailMsg) error {
 	if err != nil {
 		return err
 	}
+	if err := produceMsg(rdb, channel, detail); err != nil {
+		return err
+	}
 	return rdb.Publish(ctx, channel, content).Err()
+}
+
+func produceMsg(rdb *redis.Client, channel string, detail DetailMsg) error {
+
+	streamName := "stream-" + channel
+	return rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: streamName,
+		ID:     "",
+		Values: map[string]interface{}{
+			"message": detail.Message,
+			"type":    detail.MessageType,
+			"sender":  detail.Sender,
+		},
+	}).Err()
 }
 
 func List(rdb *redis.Client) ([]string, error) {
