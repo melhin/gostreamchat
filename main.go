@@ -33,7 +33,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.Path("/").Methods("GET").Handler(web)
-	r.Path("/chat").Methods("GET").HandlerFunc(api.H(rdb, api.ChatWebSocketHandler))
+	r.Path("/chat/{channel}").Methods("GET").HandlerFunc(api.H(rdb, api.ChatWebSocketHandler))
 	r.Path("/user/{user}/channels").Methods("GET").HandlerFunc(api.H(rdb, api.UserChannelsHandler))
 	r.Path("/users").Methods("GET").HandlerFunc(api.H(rdb, api.UsersHandler))
 

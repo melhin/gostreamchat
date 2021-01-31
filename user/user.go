@@ -23,6 +23,7 @@ var ctx = context.Background()
 
 type User struct {
 	name            string
+	Channel         string
 	channelsHandler *redis.PubSub
 
 	stopListenerChan chan struct{}
@@ -38,13 +39,14 @@ type DetailMsg struct {
 }
 
 //Connect connect user to user channels on redis
-func Connect(rdb *redis.Client, name string) (*User, error) {
+func Connect(rdb *redis.Client, name string, channel string) (*User, error) {
 	if _, err := rdb.SAdd(ctx, usersKey, name).Result(); err != nil {
 		return nil, err
 	}
 
 	u := &User{
 		name:             name,
+		Channel:          channel,
 		stopListenerChan: make(chan struct{}),
 		MessageChan:      make(chan redis.Message),
 	}
@@ -89,7 +91,7 @@ func (u *User) connect(rdb *redis.Client) error {
 	var c []string
 
 	// Stub channel
-	c = append(c, "general")
+	c = append(c, u.Channel)
 
 	//c1, err := rdb.SMembers(ctx, ChannelsKey).Result()
 	//if err != nil {

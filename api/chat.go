@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -21,10 +22,7 @@ func H(rdb *redis.Client, fn func(http.ResponseWriter, *http.Request, *redis.Cli
 }
 
 type msg struct {
-	Content string `json:"content,omitempty"`
-	Channel string `json:"channel,omitempty"`
-	Command int    `json:"command,omitempty"`
-	Err     string `json:"err,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 const (
@@ -64,9 +62,10 @@ loop:
 
 func onConnect(r *http.Request, conn *websocket.Conn, rdb *redis.Client) error {
 	username := r.URL.Query()["username"][0]
+	channel := mux.Vars(r)["channel"]
 	fmt.Println("connected from:", conn.RemoteAddr(), "user:", username)
 
-	u, err := user.Connect(rdb, username)
+	u, err := user.Connect(rdb, username, channel)
 	if err != nil {
 		return err
 	}
@@ -99,32 +98,21 @@ func onUserMessage(conn *websocket.Conn, r *http.Request, rdb *redis.Client) {
 
 	var msg msg
 
+	username := r.URL.Query()["username"][0]
 	if err := conn.ReadJSON(&msg); err != nil {
 		handleWSError(err, conn)
 		return
 	}
 
-	username := r.URL.Query()["username"][0]
 	u := connectedUsers[username]
 
-	switch msg.Command {
-	case commandSubscribe:
-		if err := u.Subscribe(rdb, msg.Channel); err != nil {
-			handleWSError(err, conn)
-		}
-	case commandUnsubscribe:
-		if err := u.Unsubscribe(rdb, msg.Channel); err != nil {
-			handleWSError(err, conn)
-		}
-	case commandChat:
-		detail := user.DetailMsg{
-			Sender:      username,
-			Message:     msg.Content,
-			MessageType: user.Message,
-		}
-		if err := user.Chat(rdb, msg.Channel, detail); err != nil {
-			handleWSError(err, conn)
-		}
+	detail := user.DetailMsg{
+		Sender:      username,
+		Message:     msg.Message,
+		MessageType: user.Message,
+	}
+	if err := user.Chat(rdb, u.Channel, detail); err != nil {
+		handleWSError(err, conn)
 	}
 }
 
@@ -149,5 +137,5 @@ func onChannelMessage(conn *websocket.Conn, r *http.Request) {
 }
 
 func handleWSError(err error, conn *websocket.Conn) {
-	_ = conn.WriteJSON(msg{Err: err.Error()})
+	_ = conn.WriteJSON(msg{Message: err.Error()})
 }

@@ -46,8 +46,18 @@
          <div id='chatborder'>
             <h1>WebSocket Chat</h1>
             <form name="chat-info" id="chat-info" action="#">
-               user: <input type="text" name="username" value="username" autocomplete="off"/>
-               <button id="connect">Connect</button>
+                <table>
+                    <tr>
+                        <td>user</td>
+                        <td>channel</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" id="username" name="username" value="username" autocomplete="off"/></td>
+                        <td><input type="text" id="channel" name="channel" value="channel" autocomplete="off"/></td>
+                        <td><button id="connect">Connect</button></td>
+                    </tr>
+                </table>
             </form>
             <ul id='messages' style="height: 60vh; overflow: scroll">
             </ul>
@@ -71,12 +81,13 @@
                ws.close();
              }
          
-             let room_info = new URLSearchParams(new FormData(document.getElementById('chat-info'))).toString();
+             let username = document.getElementById('username').value.toString();
+             let channel = document.getElementById('channel').value.toString();
              let ws_protocol = "wss://";
              if (window.location.protocol == 'http:') {
                  ws_protocol =  "ws://";
              }
-             ws = new WebSocket(ws_protocol + window.location.host + "/chat?" + room_info);
+             ws = new WebSocket(ws_protocol + window.location.host + "/chat/"+ channel +"?username=" + username);
          
              // Listen for the connection open event then call the sendMessage function
              ws.onopen = function (e) {
@@ -138,9 +149,9 @@
                  }
          
                  if (ws.readyState == 1) {
-                     //let data = {msg: msg};
-                     let data = {"content": msg, "command": 2, "channel": "general"};
+                     let data = {"message": msg};
                      ws.send(JSON.stringify(data));
+
                      input.value = '';
                      log("Message sent");
                  }
