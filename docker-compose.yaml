@@ -1,8 +1,14 @@
 version: '3'
 services:
-  redis-server:
-    image: redis
-    ports:
-      - "6379:6379"
-  redis-cli:
-    image: redis
+  web:
+      build: .
+      ports:
+       - "8080:8080"
+      links:
+       - db
+      environment:
+        REDIS_URL: db:6379
+  db:
+      image: redis
+      ports:
+       - "6379:6379"

@@ -25,7 +25,6 @@ type User struct {
 	name            string
 	Channel         string
 	channelsHandler *redis.PubSub
-	streamChannel   *redis.XStreamSliceCmd
 
 	stopListenerChan chan struct{}
 	listening        bool
@@ -93,18 +92,6 @@ func (u *User) connect(rdb *redis.Client) error {
 
 	// Stub channel
 	c = append(c, u.Channel)
-
-	//c1, err := rdb.SMembers(ctx, ChannelsKey).Result()
-	//if err != nil {
-	//	return err
-	//}
-	//c = append(c, c1...)s
-	//// get all user channels (from DB) and start subscribe
-	//c2, err := rdb.SMembers(ctx, fmt.Sprintf(userChannelFmt, u.name)).Result()
-	//if err != nil {
-	//	return err
-	//}
-	//c = append(c, c2...)
 
 	if len(c) == 0 {
 		fmt.Println("no channels to connect to for user: ", u.name)
@@ -191,24 +178,7 @@ func Chat(rdb *redis.Client, channel string, detail DetailMsg) error {
 	if err != nil {
 		return err
 	}
-	if err := produceMsg(rdb, channel, detail); err != nil {
-		return err
-	}
 	return rdb.Publish(ctx, channel, content).Err()
-}
-
-func produceMsg(rdb *redis.Client, channel string, detail DetailMsg) error {
-
-	streamName := "stream-" + channel
-	return rdb.XAdd(ctx, &redis.XAddArgs{
-		Stream: streamName,
-		ID:     "",
-		Values: map[string]interface{}{
-			"message": detail.Message,
-			"type":    detail.MessageType,
-			"sender":  detail.Sender,
-		},
-	}).Err()
 }
 
 func List(rdb *redis.Client) ([]string, error) {

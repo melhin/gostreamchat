@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"gostreamchat/api"
-	"gostreamchat/user"
 	"log"
 	"net/http"
 	"os"
@@ -16,15 +15,14 @@ import (
 var rdb *redis.Client
 var ctx = context.Background()
 
-func init() {
-	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
-	defer rdb.Close()
-	rdb.SAdd(ctx, user.ChannelsKey, "general", "random")
-}
-
 func main() {
 
-	rdb = redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	redisURL, exists := os.LookupEnv("REDIS_URL")
+	if !exists {
+		panic("No Redis Url specified")
+	}
+
+	rdb := redis.NewClient(&redis.Options{Addr: redisURL})
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("can not get os working directory: %v", err)
